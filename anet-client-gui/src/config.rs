@@ -57,7 +57,7 @@ impl AppSettings {
     pub fn save(&self) {
         let dir = Self::data_dir();
         let _ = std::fs::create_dir_all(&dir);
-        if let Ok(content) = serde_json::to_string_pretty(self) {
+        if let Ok(content) = serde_json::to_string(self) {
             let _ = std::fs::write(Self::settings_path(), content);
         }
     }

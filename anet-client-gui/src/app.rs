@@ -215,6 +215,8 @@ impl ANetApp {
             }
         };
 
+        let clean_content = Self::strip_toml_comments(&content);
+
         let name = path
             .file_name()
             .and_then(|n| n.to_str())
@@ -222,11 +224,32 @@ impl ANetApp {
             .trim_end_matches(".toml")
             .to_string();
 
-        let id = self.settings.add_config(name, content);
+        let id = self.settings.add_config(name, clean_content);
         self.settings.set_active(&id);
         if let Some(config) = self.settings.get_active_config() {
             self.load_config_from_content(&config.content, &config.name);
         }
+    }
+
+    fn strip_toml_comments(content: &str) -> String {
+        let mut result = String::new();
+        for line in content.lines() {
+            let trimmed = line.trim();
+            if trimmed.starts_with('#') {
+                continue;
+            }
+            if let Some(pos) = line.find('#') {
+                let before_comment = line[..pos].trim_end();
+                if !before_comment.is_empty() {
+                    result.push_str(before_comment);
+                    result.push('\n');
+                }
+            } else {
+                result.push_str(line);
+                result.push('\n');
+            }
+        }
+        result
     }
 
     fn delete_config(&mut self, id: &str) {
@@ -374,8 +397,10 @@ impl eframe::App for ANetApp {
                     let bg_color = if is_active {
                         egui::Color32::from_rgb(40, 80, 60)
                     } else {
-                        egui::Color32::from_rgb(30, 30, 30)
+                        egui::Color32::from_rgb(35, 35, 35)
                     };
+
+                    let text_color = egui::Color32::from_gray(220);
 
                     egui::Frame::NONE
                         .fill(bg_color)
@@ -395,7 +420,9 @@ impl eframe::App for ANetApp {
                                     }
                                 } else {
                                     if ui
-                                        .add(egui::Label::new(&config.name).sense(egui::Sense::click()))
+                                        .add(egui::Label::new(
+                                            egui::RichText::new(&config.name).color(text_color)
+                                        ).sense(egui::Sense::click()))
                                         .clicked()
                                     {
                                         self.select_config(&config.id);
@@ -425,8 +452,11 @@ impl eframe::App for ANetApp {
                 // Кнопка добавления
                 if ui
                     .add(
-                        egui::Button::new("➕ Добавить конфиг")
-                            .fill(egui::Color32::from_rgb(50, 50, 50))
+                        egui::Button::new(
+                            egui::RichText::new("➕ Добавить конфиг")
+                                .color(egui::Color32::WHITE)
+                        )
+                        .fill(egui::Color32::from_rgb(60, 60, 60))
                     )
                     .clicked()
                 {
